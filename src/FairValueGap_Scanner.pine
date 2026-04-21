@@ -1,0 +1,23 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Castle Trade LLC
+
+//@version=5
+indicator("FVG Scanner - Institutional Bridge", overlay=true)
+
+// --- Definitions ---
+is_bullish_fvg = low > high[2] and close[1] > high[2]
+is_bearish_fvg = high < low[2] and close[1] < low[2]
+
+// --- Visual Representation ---
+if is_bullish_fvg
+    box.new(bar_index[2], low, bar_index, high[2], bgcolor=color.new(color.blue, 90), border_color=color.blue)
+    // Webhook Payload Construction
+    alert('{"type": "FVG_BULL", "symbol": "' + syminfo.ticker + '", "top": ' + str.tostring(low) + ', "bottom": ' + str.tostring(high[2]) + '}', alert.freq_once_per_bar)
+
+if is_bearish_fvg
+    box.new(bar_index[2], high, bar_index, low[2], bgcolor=color.new(color.orange, 90), border_color=color.orange)
+    // Webhook Payload Construction
+    alert('{"type": "FVG_BEAR", "symbol": "' + syminfo.ticker + '", "top": ' + str.tostring(low[2]) + ', "bottom": ' + str.tostring(high) + '}', alert.freq_once_per_bar)
+
+plotshape(is_bullish_fvg, "Bullish FVG", shape.triangleup, location.belowbar, color.blue, size=size.small)
+plotshape(is_bearish_fvg, "Bearish FVG", shape.triangledown, location.abovebar, color.orange, size=size.small)
