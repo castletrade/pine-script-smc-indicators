@@ -1,0 +1,55 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Castle Trade LLC
+
+//@version=5
+indicator("Order Blocks Matrix - Castle Trade", overlay=true, max_boxes_count=500)
+
+// --- Institutional Data Structures ---
+// Matrix stores: [PriceLevel, IsBullish, StartTime, IsMitigated]
+var matrix<float> ob_matrix = matrix.new<float>(0, 4)
+var box[] ob_boxes = array.new_box()
+
+// --- Input Parameters ---
+int length = input.int(20, "Lookback Period", minval=1)
+float threshold = input.float(1.5, "Volume Multiplier", minval=1.0)
+color bull_color = input.color(color.new(color.emerald, 80), "Bullish OB Color")
+color bear_color = input.color(color.new(color.crimson, 80), "Bearish OB Color")
+
+// --- SMC Logic ---
+is_engulfing_bull = close > high[1] and close[1] < open[1] and volume > ta.sma(volume, 20) * threshold
+is_engulfing_bear = close < low[1] and close[1] > open[1] and volume > ta.sma(volume, 20) * threshold
+
+if is_engulfing_bull
+    // New Bullish Order Block Identified
+    float ob_low = low[1]
+    float ob_high = high[1]
+    
+    // Add to Matrix
+    matrix.add_row(ob_matrix, array.from(ob_low, 1.0, float(time[1]), 0.0))
+    
+    // Draw on Chart
+    array.push(ob_boxes, box.new(left=bar_index[1], top=ob_high, right=bar_index, bottom=ob_low, 
+         bgcolor=bull_color, border_color=color.emerald, border_style=line.style_dotted))
+
+if is_engulfing_bear
+    // New Bearish Order Block Identified
+    float ob_low = low[1]
+    float ob_high = high[1]
+    
+    // Add to Matrix
+    matrix.add_row(ob_matrix, array.from(ob_high, 0.0, float(time[1]), 0.0))
+    
+    // Draw on Chart
+    array.push(ob_boxes, box.new(left=bar_index[1], top=ob_high, right=bar_index, bottom=ob_low, 
+         bgcolor=bear_color, border_color=color.crimson, border_style=line.style_dotted))
+
+// --- Mitigation Logic (No-Repaint) ---
+if barstate.isconfirmed
+    for i = 0 to array.size(ob_boxes) - 1
+        b = array.get(ob_boxes, i)
+        box.set_right(b, bar_index)
+        
+        // Simple mitigation check
+        if low < box.get_bottom(b) or high > box.get_top(b)
+            // Implementation of matrix update logic would go here for a full suite
+            pass
